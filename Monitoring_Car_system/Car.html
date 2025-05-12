@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulatore Macchina</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    h2 { color: #333; }
+    .status-box { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    button { margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+    .danger { background: #e74c3c; color: white; }
+    .normal { background: #2ecc71; color: white; }
+    .warn { background: #f39c12; color: white; }
+    .reset { background: #3498db; color: white; }
+  </style>
+</head>
+<body>
+  <h2>Simulatore Stato Macchina</h2>
+  <div class="status-box" id="status">
+    <p><strong>Pressione Gomme:</strong> <span id="pressure">2.2</span> bar</p>
+    <p><strong>Temperatura Motore:</strong> <span id="temperature">90</span> °C</p>
+    <p><strong>Stato Motore:</strong> <span id="engine">Acceso</span></p>
+    <p><strong>Stato Batteria:</strong> <span id="battery">Normale</span></p>
+    <p><strong>Livello Olio:</strong> <span id="oil">80</span>%</p>
+    <p><strong>Usura Freni:</strong> <span id="brakes">20</span>%</p>
+    <p><strong>Livello Carburante:</strong> <span id="fuel">75</span>%</p>
+    <p><strong>Chilometraggio:</strong> <span id="mileage">45000</span> km</p>
+    <p><strong>Guasti:</strong> <span id="fault">Nessuno</span></p>
+  </div>
+  <div>
+    <button class="normal" onclick="adjustPressure(0.1)">Aumenta Pressione</button>
+    <button class="warn" onclick="adjustPressure(-0.1)">Diminuisci Pressione</button>
+    <button class="danger" onclick="simulateFault()">Guasto Motore</button>
+    <button class="warn" onclick="increaseTemp()">Aumenta Temperatura</button>
+    <button class="danger" onclick="burnBattery()">Brucia Batteria</button>
+    <button class="warn" onclick="shutdownBattery()">Spegni Batteria</button>
+    <button class="normal" onclick="adjustOil(5)">Aggiungi Olio</button>
+    <button class="warn" onclick="adjustOil(-10)">Consuma Olio</button>
+    <button class="warn" onclick="wearBrakes(10)">Usura Freni</button>
+    <button class="normal" onclick="replaceBrakes()">Sostituisci Freni</button>
+    <button class="normal" onclick="refuel(25)">Rifornimento</button>
+    <button class="warn" onclick="consumeFuel(5)">Consuma Carburante</button>
+    <button class="normal" onclick="addMileage(100)">Aggiungi 100 km</button>
+    <button class="warn" onclick="addMileage(1000)">Aggiungi 1000 km</button>
+    <button class="reset" onclick="resetSystem()">Reset</button>
+  </div>
+  <script>
+    let pressure = 2.2;
+    let temperature = 90;
+    let engineOn = true;
+    let batteryStatus = "Normale";
+    let oilLevel = 80;
+    let brakesWear = 20;
+    let fuelLevel = 75;
+    let mileage = 45000;
+    let fault = "Nessuno";
+    
+    function updateDisplay() {
+      document.getElementById("pressure").innerText = pressure.toFixed(1);
+      document.getElementById("temperature").innerText = temperature;
+      document.getElementById("engine").innerText = engineOn ? "Acceso" : "Guasto";
+      document.getElementById("battery").innerText = batteryStatus;
+      document.getElementById("oil").innerText = oilLevel;
+      document.getElementById("brakes").innerText = brakesWear;
+      document.getElementById("fuel").innerText = fuelLevel;
+      document.getElementById("mileage").innerText = mileage;
+      document.getElementById("fault").innerText = fault;
+    }
+    
+    function adjustPressure(change) {
+      pressure += change;
+      if (pressure < 0) pressure = 0;
+      updateDisplay();
+    }
+    
+    function simulateFault() {
+      engineOn = false;
+      fault = "Guasto motore rilevato!";
+      updateDisplay();
+    }
+    
+    function increaseTemp() {
+      temperature += Math.floor(Math.random() * 10 + 5);
+      if (temperature > 130) fault = "Surriscaldamento!";
+      updateDisplay();
+    }
+    
+    function burnBattery() {
+      batteryStatus = "Batteria bruciata!";
+      fault = "Corto circuito!";
+      updateDisplay();
+    }
+    
+    function shutdownBattery() {
+      batteryStatus = "Batteria spenta";
+      updateDisplay();
+    }
+    
+    function adjustOil(change) {
+      oilLevel += change;
+      if (oilLevel > 100) oilLevel = 100;
+      if (oilLevel < 0) oilLevel = 0;
+      if (oilLevel < 20) fault = "Livello olio basso!";
+      updateDisplay();
+    }
+    
+    function wearBrakes(amount) {
+      brakesWear += amount;
+      if (brakesWear > 100) brakesWear = 100;
+      if (brakesWear > 80) fault = "Freni usurati!";
+      updateDisplay();
+    }
+    
+    function replaceBrakes() {
+      brakesWear = 0;
+      updateDisplay();
+    }
+    
+    function refuel(amount) {
+      fuelLevel += amount;
+      if (fuelLevel > 100) fuelLevel = 100;
+      updateDisplay();
+    }
+    
+    function consumeFuel(amount) {
+      fuelLevel -= amount;
+      if (fuelLevel < 0) fuelLevel = 0;
+      if(fuelLevel > 10) fault = "Nessuno";
+      if (fuelLevel < 10) fault = "Carburante quasi esaurito!";
+      updateDisplay();
+    }
+    
+    function addMileage(km) {
+      mileage += km;
+      updateDisplay();
+    }
+    
+    function resetSystem() {
+      pressure = 2.2;
+      temperature = 90;
+      engineOn = true;
+      batteryStatus = "Normale";
+      oilLevel = 80;
+      brakesWear = 20;
+      fuelLevel = 75;
+      mileage = 45000;
+      fault = "Nessuno";
+      updateDisplay();
+    }
+    
+    updateDisplay();
+  </script>
+</body>
+</html>
