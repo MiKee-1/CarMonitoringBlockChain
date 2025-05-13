@@ -141,6 +141,9 @@
       adjustPressure(change) {
         this.pressure = Math.max(0, this.pressure + change);
         this.updateDisplay();
+        if(this.pressure < 1.5) this.fault = "Pressione gomme bassa!";
+        else if (this.pressure > 3.0) this.fault = "Pressione gomme alta!";
+        else this.fault = "Nessuno";
         sendCarStateToBlockchain(this); // Salva automaticamente
       }
 
@@ -274,6 +277,8 @@
     const blockchainHistorySection = document.createElement('div');
     blockchainHistorySection.innerHTML = `
       <h2>Storia Blockchain</h2>
+      <p>Visualizza la storia delle macchine per data.</p>
+      <input type="date" id="date-input" style="margin-bottom: 10px;">
       <div style="display: flex; gap: 20px;">
         <button id="view-car1-history" class="reset">Visualizza Storia Macchina 1</button>
         <button id="view-car2-history" class="reset">Visualizza Storia Macchina 2</button>
@@ -313,47 +318,57 @@
       }
     });
     
-    async function fetchCarHistory(carId) {
-      try {
-        const response = await fetch(`http://localhost:5000/get_car_history/${carId}`);
+async function fetchCarHistory(carId) {
+    try {
+        // Ottieni il valore della data dal campo input
+        const dateInput = document.getElementById('date-input');
+        const dateValue = dateInput.value; // Stringa vuota se nessuna data selezionata
+        
+        // Costruisci l'URL con il parametro date se presente
+        let url = `http://localhost:5000/get_car_history/${carId}`;
+        if (dateValue) {
+            url += `?date=${dateValue}`;
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
         
         const historyEl = document.getElementById('blockchain-history');
         if (data.history.length === 0) {
-          historyEl.innerHTML = `<p>Nessuna registrazione trovata per la macchina ${carId}</p>`;
-          return;
+            historyEl.innerHTML = `<p>Nessuna registrazione trovata per la macchina ${carId}${dateValue ? ` nella data ${dateValue}` : ''}</p>`;
+            return;
         }
         
-        let html = `<h3>Storia della Macchina ${carId}</h3>`;
+        let html = `<h3>Storia della Macchina ${carId}${dateValue ? ` - Data: ${dateValue}` : ''}</h3>`;
         
         data.history.forEach((block, index) => {
-          const carData = block.car_data.data;
-          const date = new Date(block.timestamp).toLocaleString();
-          
-          html += `
-            <div style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; border-radius: 5px;">
-              <p><strong>Blocco #${block.index}</strong> - ${date}</p>
-              <p><strong>Pressione Gomme:</strong> ${carData.pressure.toFixed(1)} bar</p>
-              <p><strong>Temperatura Motore:</strong> ${carData.temperature} °C</p>
-              <p><strong>Stato Motore:</strong> ${carData.engineOn ? "Acceso" : "Guasto"}</p>
-              <p><strong>Stato Batteria:</strong> ${carData.batteryStatus}</p>
-              <p><strong>Livello Olio:</strong> ${carData.oilLevel}%</p>
-              <p><strong>Usura Freni:</strong> ${carData.brakesWear}%</p>
-              <p><strong>Livello Carburante:</strong> ${carData.fuelLevel}%</p>
-              <p><strong>Chilometraggio:</strong> ${carData.mileage} km</p>
-              <p><strong>Guasti:</strong> ${carData.fault}</p>
-              <p><strong>Hash:</strong> <span style="font-size: 0.8em;">${block.hash}</span></p>
-            </div>
-          `;
+            const carData = block.car_data.data;
+            const date = new Date(block.timestamp).toLocaleString();
+            
+            html += `
+                <div style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; border-radius: 5px;">
+                    <p><strong>Blocco #${block.index}</strong> - ${date}</p>
+                    <p><strong>Pressione Gomme:</strong> ${carData.pressure.toFixed(1)} bar</p>
+                    <p><strong>Temperatura Motore:</strong> ${carData.temperature} °C</p>
+                    <p><strong>Stato Motore:</strong> ${carData.engineOn ? "Acceso" : "Guasto"}</p>
+                    <p><strong>Stato Batteria:</strong> ${carData.batteryStatus}</p>
+                    <p><strong>Livello Olio:</strong> ${carData.oilLevel}%</p>
+                    <p><strong>Usura Freni:</strong> ${carData.brakesWear}%</p>
+                    <p><strong>Livello Carburante:</strong> ${carData.fuelLevel}%</p>
+                    <p><strong>Chilometraggio:</strong> ${carData.mileage} km</p>
+                    <p><strong>Guasti:</strong> ${carData.fault}</p>
+                    <p><strong>Hash:</strong> <span style="font-size: 0.8em;">${block.hash}</span></p>
+                </div>
+            `;
         });
         
         historyEl.innerHTML = html;
-      } catch (error) {
+    } catch (error) {
         console.error('Errore durante il recupero della storia:', error);
         const historyEl = document.getElementById('blockchain-history');
         historyEl.innerHTML = `<p style="color: red; font-weight: bold;">Errore di connessione al server. Il server è attivo?</p>`;
-      }
     }
+}
   </script>
 </body>
 </html>
