@@ -85,10 +85,3 @@ python Blockchain.py
 - Add more advanced data visualization tools
 - Develop a mobile application for remote vehicle monitoring
 
-## License
-
-[MIT License](LICENSE)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
