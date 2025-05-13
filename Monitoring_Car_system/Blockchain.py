@@ -109,15 +109,24 @@ class CarBlockchain:
                 return False
         return True
     
-    def get_car_history(self, car_id):
-        # Ottieni la storia di una macchina specifica
+    def get_car_history(self, car_id, date=None):
+        # Ottieni la storia di una macchina specifica, opzionalmente filtrata per data
         car_blocks = []
         for block in self.chain:
             if block.index > 0:  # Salta il genesis block
                 if block.car_data.get("car_id") == car_id:
-                    car_blocks.append(block.to_dict())
+                    # Se una data è specificata, filtra per quella data
+                    if date:
+                        # Estrai la data dal timestamp (il timestamp è in formato ISO)
+                        block_date = block.timestamp.split('T')[0]  # Prende solo YYYY-MM-DD
+                        if block_date == date:
+                            car_blocks.append(block.to_dict())
+                    else:
+                        # Se nessuna data è specificata, aggiungi tutti i blocchi
+                        car_blocks.append(block.to_dict())
         return car_blocks
     
+
     def get_all_blocks(self):
         return [block.to_dict() for block in self.chain]
     
@@ -155,8 +164,7 @@ class CarBlockchain:
                 return False
         else:
             print(f"File blockchain {BLOCKCHAIN_FILE} non trovato. Verrà creata una nuova blockchain.")
-            return False
-
+            return 
 
 # Inizializza la blockchain
 blockchain = CarBlockchain()
@@ -207,22 +215,15 @@ def add_data():
 @app.route('/get_car_history/<car_id>', methods=['GET'])
 def get_history(car_id):
     try:
-        history = blockchain.get_car_history(car_id)
+        # Ottieni il parametro data dalla query string, se presente
+        date = request.args.get('date')
+        
+        history = blockchain.get_car_history(car_id, date)
         return jsonify({
             "car_id": car_id, 
             "history": history,
-            "count": len(history)
-        })
-    except Exception as e:
-        return jsonify({"error": f"Errore del server: {str(e)}"}), 500
-
-@app.route('/get_all_blocks', methods=['GET'])
-def get_all_blocks():
-    try:
-        blocks = blockchain.get_all_blocks()
-        return jsonify({
-            "chain": blocks,
-            "length": len(blocks)
+            "count": len(history),
+            "date_filter": date if date else "None"
         })
     except Exception as e:
         return jsonify({"error": f"Errore del server: {str(e)}"}), 500
