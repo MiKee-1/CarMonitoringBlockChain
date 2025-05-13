@@ -30,7 +30,77 @@
     <div id="car2-buttons"></div>
   </div>
 
+  <div id="blockchain-history-container"></div>
+
   <script>
+    // Funzione per inviare lo stato dell'auto al backend blockchain
+    async function sendCarStateToBlockchain(car) {
+      try {
+        const response = await fetch('http://localhost:5000/add_car_data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            car_id: car.id,
+            pressure: car.pressure,
+            temperature: car.temperature,
+            engineOn: car.engineOn,
+            batteryStatus: car.batteryStatus,
+            oilLevel: car.oilLevel,
+            brakesWear: car.brakesWear,
+            fuelLevel: car.fuelLevel,
+            mileage: car.mileage,
+            fault: car.fault
+          }),
+        });
+        
+        const data = await response.json();
+        console.log('Stato auto registrato nella blockchain:', data);
+        
+        // Mostra notifica all'utente
+        const notificationEl = document.createElement('div');
+        notificationEl.style.position = 'fixed';
+        notificationEl.style.bottom = '20px';
+        notificationEl.style.right = '20px';
+        notificationEl.style.padding = '10px';
+        notificationEl.style.background = '#2ecc71';
+        notificationEl.style.color = 'white';
+        notificationEl.style.borderRadius = '5px';
+        notificationEl.style.zIndex = '1000';
+        notificationEl.innerText = `Stato della macchina ${car.id} registrato nella blockchain`;
+        
+        document.body.appendChild(notificationEl);
+        
+        // Rimuovi la notifica dopo 3 secondi
+        setTimeout(() => {
+          document.body.removeChild(notificationEl);
+        }, 3000);
+        
+      } catch (error) {
+        console.error('Errore durante l\'invio dei dati:', error);
+        
+        // Mostra notifica di errore
+        const errorNotificationEl = document.createElement('div');
+        errorNotificationEl.style.position = 'fixed';
+        errorNotificationEl.style.bottom = '20px';
+        errorNotificationEl.style.right = '20px';
+        errorNotificationEl.style.padding = '10px';
+        errorNotificationEl.style.background = '#e74c3c';
+        errorNotificationEl.style.color = 'white';
+        errorNotificationEl.style.borderRadius = '5px';
+        errorNotificationEl.style.zIndex = '1000';
+        errorNotificationEl.innerText = `Errore: Impossibile salvare sulla blockchain. Server attivo?`;
+        
+        document.body.appendChild(errorNotificationEl);
+        
+        setTimeout(() => {
+          document.body.removeChild(errorNotificationEl);
+        }, 3000);
+      }
+    }
+
+    // Definizione unica della classe Car che include tutte le funzionalità
     class Car {
       constructor(id) {
         this.id = id;
@@ -45,6 +115,12 @@
         this.fault = "Nessuno";
         this.renderButtons();
         this.updateDisplay();
+        
+        // Registra lo stato iniziale nella blockchain
+        sendCarStateToBlockchain(this);
+        
+        // Aggiungi un pulsante per salvare manualmente lo stato sulla blockchain
+        this.addSaveStateButton();
       }
 
       updateDisplay() {
@@ -65,62 +141,73 @@
       adjustPressure(change) {
         this.pressure = Math.max(0, this.pressure + change);
         this.updateDisplay();
+        sendCarStateToBlockchain(this); // Salva automaticamente
       }
 
       simulateFault() {
         this.engineOn = false;
         this.fault = "Guasto motore rilevato!";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       increaseTemp() {
         this.temperature += Math.floor(Math.random() * 10 + 5);
         if (this.temperature > 130) this.fault = "Surriscaldamento!";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       burnBattery() {
         this.batteryStatus = "Batteria bruciata!";
         this.fault = "Corto circuito!";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       shutdownBattery() {
         this.batteryStatus = "Batteria spenta";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       adjustOil(change) {
         this.oilLevel = Math.min(100, Math.max(0, this.oilLevel + change));
         if (this.oilLevel < 20) this.fault = "Livello olio basso!";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       wearBrakes(amount) {
         this.brakesWear = Math.min(100, this.brakesWear + amount);
         if (this.brakesWear > 80) this.fault = "Freni usurati!";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       replaceBrakes() {
         this.brakesWear = 0;
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       refuel(amount) {
         this.fuelLevel = Math.min(100, this.fuelLevel + amount);
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       consumeFuel(amount) {
         this.fuelLevel = Math.max(0, this.fuelLevel - amount);
         this.fault = this.fuelLevel < 10 ? "Carburante quasi esaurito!" : "Nessuno";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       addMileage(km) {
         this.mileage += km;
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       reset() {
@@ -134,6 +221,7 @@
         this.mileage = 45000;
         this.fault = "Nessuno";
         this.updateDisplay();
+        sendCarStateToBlockchain(this);
       }
 
       renderButtons() {
@@ -164,11 +252,108 @@
           container.appendChild(btn);
         });
       }
+      
+      // Metodo aggiunto per la funzionalità blockchain
+      addSaveStateButton() {
+        const container = document.getElementById(this.id + "-buttons");
+        const saveBtn = document.createElement("button");
+        saveBtn.innerText = "Salva su Blockchain";
+        saveBtn.className = "normal";
+        saveBtn.style.background = "#3498db";
+        saveBtn.style.fontWeight = "bold";
+        saveBtn.onclick = () => sendCarStateToBlockchain(this);
+        container.appendChild(saveBtn);
+      }
     }
 
-    // Istanzia due macchine
+    // Istanzia due macchine (solo una volta)
     const car1 = new Car("car1");
     const car2 = new Car("car2");
+    
+    // Aggiungi la sezione per visualizzare la storia della blockchain
+    const blockchainHistorySection = document.createElement('div');
+    blockchainHistorySection.innerHTML = `
+      <h2>Storia Blockchain</h2>
+      <div style="display: flex; gap: 20px;">
+        <button id="view-car1-history" class="reset">Visualizza Storia Macchina 1</button>
+        <button id="view-car2-history" class="reset">Visualizza Storia Macchina 2</button>
+        <button id="validate-chain" class="reset">Verifica Integrità Blockchain</button>
+      </div>
+      <div id="blockchain-history" style="margin-top: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <p>Seleziona un'opzione per visualizzare la storia della blockchain</p>
+      </div>
+    `;
+    
+    document.getElementById("blockchain-history-container").appendChild(blockchainHistorySection);
+    
+    // Aggiungi gli event listener ai pulsanti
+    document.getElementById('view-car1-history').addEventListener('click', async () => {
+      await fetchCarHistory('car1');
+    });
+    
+    document.getElementById('view-car2-history').addEventListener('click', async () => {
+      await fetchCarHistory('car2');
+    });
+    
+    document.getElementById('validate-chain').addEventListener('click', async () => {
+      try {
+        const response = await fetch('http://localhost:5000/validate_chain');
+        const data = await response.json();
+        
+        const historyEl = document.getElementById('blockchain-history');
+        if (data.valid) {
+          historyEl.innerHTML = `<p style="color: green; font-weight: bold;">La blockchain è valida e integra!</p>`;
+        } else {
+          historyEl.innerHTML = `<p style="color: red; font-weight: bold;">ATTENZIONE: La blockchain è stata manomessa!</p>`;
+        }
+      } catch (error) {
+        console.error('Errore durante la verifica della blockchain:', error);
+        const historyEl = document.getElementById('blockchain-history');
+        historyEl.innerHTML = `<p style="color: red; font-weight: bold;">Errore di connessione al server. Il server è attivo?</p>`;
+      }
+    });
+    
+    async function fetchCarHistory(carId) {
+      try {
+        const response = await fetch(`http://localhost:5000/get_car_history/${carId}`);
+        const data = await response.json();
+        
+        const historyEl = document.getElementById('blockchain-history');
+        if (data.history.length === 0) {
+          historyEl.innerHTML = `<p>Nessuna registrazione trovata per la macchina ${carId}</p>`;
+          return;
+        }
+        
+        let html = `<h3>Storia della Macchina ${carId}</h3>`;
+        
+        data.history.forEach((block, index) => {
+          const carData = block.car_data.data;
+          const date = new Date(block.timestamp).toLocaleString();
+          
+          html += `
+            <div style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; border-radius: 5px;">
+              <p><strong>Blocco #${block.index}</strong> - ${date}</p>
+              <p><strong>Pressione Gomme:</strong> ${carData.pressure.toFixed(1)} bar</p>
+              <p><strong>Temperatura Motore:</strong> ${carData.temperature} °C</p>
+              <p><strong>Stato Motore:</strong> ${carData.engineOn ? "Acceso" : "Guasto"}</p>
+              <p><strong>Stato Batteria:</strong> ${carData.batteryStatus}</p>
+              <p><strong>Livello Olio:</strong> ${carData.oilLevel}%</p>
+              <p><strong>Usura Freni:</strong> ${carData.brakesWear}%</p>
+              <p><strong>Livello Carburante:</strong> ${carData.fuelLevel}%</p>
+              <p><strong>Chilometraggio:</strong> ${carData.mileage} km</p>
+              <p><strong>Guasti:</strong> ${carData.fault}</p>
+              <p><strong>Hash:</strong> <span style="font-size: 0.8em;">${block.hash}</span></p>
+            </div>
+          `;
+        });
+        
+        historyEl.innerHTML = html;
+      } catch (error) {
+        console.error('Errore durante il recupero della storia:', error);
+        const historyEl = document.getElementById('blockchain-history');
+        historyEl.innerHTML = `<p style="color: red; font-weight: bold;">Errore di connessione al server. Il server è attivo?</p>`;
+      }
+    }
   </script>
 </body>
 </html>
